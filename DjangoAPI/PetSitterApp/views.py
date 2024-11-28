@@ -1,8 +1,11 @@
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from django.http import JsonResponse
+from django.db.models import Max
+from django.contrib.auth.hashers import make_password
+from django.db import IntegrityError
 
 from PetSitterApp.models import Pets, Users, Availabilities, Reservations, Roles, Sitters, Services
 from PetSitterApp.serializers import PetSerializer, UserSerializer, AvailabilitySerializer, RoleSerializer, SitterSerializer, ReservationSerializer, ServiceSerializer
@@ -11,7 +14,7 @@ from django.core.files.storage import default_storage
 
 # Create your views here.
 
-@csrf_exempt #Availability CRUD
+@api_view #Availability CRUD
 def availabilityApi(request, id=0):
     if request.method =='GET':
         if id!=0:
@@ -52,7 +55,7 @@ def availabilityApi(request, id=0):
             return JsonResponse({'error': 'Availability not found.'}, status=404)
         
 
-@csrf_exempt #Sitter CRUD
+@api_view #Sitter CRUD
 def sitterApi(request, id=0):
     if request.method =='GET':
         if id!=0:
@@ -100,7 +103,7 @@ def sitterApi(request, id=0):
             return JsonResponse({'error': 'Sitter not found.'}, status=404)
         
 
-@csrf_exempt #Service CRUD
+@api_view #Service CRUD
 def serviceApi(request, id=0):
     if request.method =='GET':
         if id!=0:
@@ -141,7 +144,7 @@ def serviceApi(request, id=0):
             return JsonResponse({'error': 'Service not found.'}, status=404)
         
 
-@csrf_exempt  # Roles CRUD
+@api_view  # Roles CRUD
 def roleApi(request, id=0):
     if request.method == 'GET':
         if id != 0:
@@ -181,7 +184,7 @@ def roleApi(request, id=0):
         except Roles.DoesNotExist:
             return JsonResponse({'error': 'Role not found.'}, status=404)
         
-@csrf_exempt  # Pets CRUD
+@api_view  # Pets CRUD
 def petApi(request, id=0):
     if request.method == 'GET':
         if id != 0:
@@ -222,7 +225,7 @@ def petApi(request, id=0):
             return JsonResponse({'error': 'Pet not found.'}, status=404)
         
 
-@csrf_exempt  # Users CRUD
+@api_view  # Users CRUD
 def userApi(request, id=0):
     if request.method == 'GET':
         if id != 0:
@@ -235,14 +238,7 @@ def userApi(request, id=0):
         else:
             users = Users.objects.all()
             users_serializer = UserSerializer(users, many=True)
-            return JsonResponse(users_serializer.data, safe=False)
-    elif request.method == 'POST':
-        users_data = JSONParser().parse(request)
-        users_serializer = UserSerializer(data=users_data)
-        if users_serializer.is_valid():
-            users_serializer.save()
-            return JsonResponse("Added successfully", safe=False)
-        return JsonResponse("Failed to add", safe=False)
+            return JsonResponse(users_serializer.data, safe=False)    
     elif request.method == 'PUT':
         users_data = JSONParser().parse(request)
         try:
@@ -261,9 +257,34 @@ def userApi(request, id=0):
             return JsonResponse("Deleted successfully", safe=False)
         except Users.DoesNotExist:
             return JsonResponse({'error': 'User not found.'}, status=404)
+        
+@api_view(['POST'])
+def register(request):
+    try:
+        users_data = JSONParser().parse(request)
+        max_user_id = Users.objects.aggregate(Max('user_id'))['user_id__max'] or 0
+        new_user_id = max_user_id + 1
+
+        new_user_data = {
+            "user_id": new_user_id,
+            "username": users_data['username'],
+            "email": users_data['email'],
+            "fullname": users_data['fullname'],
+            "role_id": 2,  # Default role for customer
+            "password": make_password(users_data['password']),
+        }
+
+        users_serializer = UserSerializer(data=new_user_data)
+        if users_serializer.is_valid(raise_exception=True):
+            users_serializer.save()
+            return JsonResponse({"message": "User registered successfully!"}, status=201)
+    except IntegrityError:
+        return JsonResponse({"error": "Username or email already exists!"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
-@csrf_exempt  # Reservations CRUD
+@api_view  # Reservations CRUD
 def reservationApi(request, id=0):
     if request.method == 'GET':
         if id != 0:
@@ -304,7 +325,7 @@ def reservationApi(request, id=0):
             return JsonResponse({'error': 'Reservation not found.'}, status=404)
         
 
-@csrf_exempt
+@api_view
 def SaveFile(request):
     file=request.FILES['file']
     file_name=default_storage.save(file.name, file)

@@ -18,13 +18,12 @@ urlpatterns= [
 
     re_path(r'^user$', views.userApi),
     re_path(r'^user/(\d+)$', views.userApi),
+    re_path('register/', views.register, name='register'),
 
     re_path(r'^service$', views.serviceApi),
     re_path(r'^service/(\d+)$', views.serviceApi),
     
     re_path(r'^sitter$', views.sitterApi),
     re_path(r'^sitter/(\d+)$', views.sitterApi),
-
-    re_path(r'^/user/savefile', views.SaveFile)
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
