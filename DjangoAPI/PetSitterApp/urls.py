@@ -19,6 +19,7 @@ urlpatterns= [
     re_path(r'^user$', views.userApi),
     re_path(r'^user/(\d+)$', views.userApi),
     re_path('register/', views.register, name='register'),
+    re_path('login/', views.login, name='login'),
 
     re_path(r'^service$', views.serviceApi),
     re_path(r'^service/(\d+)$', views.serviceApi),

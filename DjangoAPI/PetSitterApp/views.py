@@ -5,6 +5,7 @@ from django.http.response import JsonResponse
 from django.http import JsonResponse
 from django.db.models import Max
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password
 from django.db import IntegrityError
 
 from PetSitterApp.models import Pets, Users, Availabilities, Reservations, Roles, Sitters, Services
@@ -58,7 +59,7 @@ def availabilityApi(request, id=0):
 @api_view #Sitter CRUD
 def sitterApi(request, id=0):
     if request.method =='GET':
-        if id!=0:
+        if id!=None:
             try:
                 sitter=Sitters.objects.get(sitter_id=id)
                 sitter_data = {
@@ -282,6 +283,23 @@ def register(request):
         return JsonResponse({"error": "Username or email already exists!"}, status=400)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+    
+@api_view(['POST'])
+def login(request):
+    try:
+        data = JSONParser().parse(request)
+        email = data.get('email')
+        password = data.get('password')
+
+        # Ellenőrizzük, hogy létezik-e a felhasználó az adott e-mail címmel
+        user = Users.objects.filter(email=email).first()
+
+        if user and check_password(password, user.password):
+            return JsonResponse({"message": "Sikeres bejelentkezés!", "user_id": user.user_id}, status=200)
+        else:
+            return JsonResponse({"error": "Érvénytelen e-mail cím vagy jelszó!"}, status=401)
+    except Exception as e:
+        return JsonResponse({"error": f"Hiba történt: {str(e)}"}, status=500)
 
 
 @api_view  # Reservations CRUD
