@@ -15,7 +15,8 @@ from django.core.files.storage import default_storage
 
 # Create your views here.
 
-@api_view #Availability CRUD
+
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def availabilityApi(request, id=0):
     if request.method =='GET':
         if id!=0:
@@ -56,10 +57,10 @@ def availabilityApi(request, id=0):
             return JsonResponse({'error': 'Availability not found.'}, status=404)
         
 
-@api_view #Sitter CRUD
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def sitterApi(request, id=0):
     if request.method =='GET':
-        if id!=None:
+        if id != 0:
             try:
                 sitter=Sitters.objects.get(sitter_id=id)
                 sitter_data = {
@@ -104,7 +105,7 @@ def sitterApi(request, id=0):
             return JsonResponse({'error': 'Sitter not found.'}, status=404)
         
 
-@api_view #Service CRUD
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def serviceApi(request, id=0):
     if request.method =='GET':
         if id!=0:
@@ -145,7 +146,7 @@ def serviceApi(request, id=0):
             return JsonResponse({'error': 'Service not found.'}, status=404)
         
 
-@api_view  # Roles CRUD
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def roleApi(request, id=0):
     if request.method == 'GET':
         if id != 0:
@@ -185,7 +186,7 @@ def roleApi(request, id=0):
         except Roles.DoesNotExist:
             return JsonResponse({'error': 'Role not found.'}, status=404)
         
-@api_view  # Pets CRUD
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def petApi(request, id=0):
     if request.method == 'GET':
         if id != 0:
@@ -226,7 +227,7 @@ def petApi(request, id=0):
             return JsonResponse({'error': 'Pet not found.'}, status=404)
         
 
-@api_view  # Users CRUD
+@api_view(['GET', 'PUT'])
 def userApi(request, id=0):
     if request.method == 'GET':
         if id != 0:
@@ -239,25 +240,18 @@ def userApi(request, id=0):
         else:
             users = Users.objects.all()
             users_serializer = UserSerializer(users, many=True)
-            return JsonResponse(users_serializer.data, safe=False)    
+            return JsonResponse(users_serializer.data, safe=False) 
     elif request.method == 'PUT':
-        users_data = JSONParser().parse(request)
+        user_data = JSONParser().parse(request)
         try:
-            user = Users.objects.get(user_id=users_data['user_id'])
-            users_serializer = UserSerializer(user, data=users_data)
-            if users_serializer.is_valid():
-                users_serializer.save()
+            user = Users.objects.get(user_id=user_data['user_id'])
+            user_serializer = UserSerializer(user, data=user_data)
+            if user_serializer.is_valid():
+                user_serializer.save()
                 return JsonResponse("Updated successfully", safe=False)
             return JsonResponse("Failed to update", safe=False)
         except Users.DoesNotExist:
             return JsonResponse({'error': 'User with the given ID is not found.'}, status=404)
-    elif request.method == 'DELETE':
-        try:
-            user = Users.objects.get(user_id=id)
-            user.delete()
-            return JsonResponse("Deleted successfully", safe=False)
-        except Users.DoesNotExist:
-            return JsonResponse({'error': 'User not found.'}, status=404)
         
 @api_view(['POST'])
 def register(request):
@@ -291,10 +285,10 @@ def login(request):
         email = data.get('email')
         password = data.get('password')
 
-        # Ellenőrizzük, hogy létezik-e a felhasználó az adott e-mail címmel
         user = Users.objects.filter(email=email).first()
 
         if user and check_password(password, user.password):
+            request.session['user_id'] = user.user_id
             return JsonResponse({"message": "Sikeres bejelentkezés!", "user_id": user.user_id}, status=200)
         else:
             return JsonResponse({"error": "Érvénytelen e-mail cím vagy jelszó!"}, status=401)
@@ -302,7 +296,8 @@ def login(request):
         return JsonResponse({"error": f"Hiba történt: {str(e)}"}, status=500)
 
 
-@api_view  # Reservations CRUD
+
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def reservationApi(request, id=0):
     if request.method == 'GET':
         if id != 0:

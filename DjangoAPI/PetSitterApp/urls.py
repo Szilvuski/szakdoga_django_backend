@@ -28,3 +28,7 @@ urlpatterns= [
     re_path(r'^sitter/(\d+)$', views.sitterApi),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+
+
