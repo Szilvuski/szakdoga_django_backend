@@ -189,6 +189,7 @@ def roleApi(request, id=0):
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def petApi(request, id=0):
     if request.method == 'GET':
+        # If specific pet ID is provided
         if id != 0:
             try:
                 pet = Pets.objects.get(pet_id=id)
@@ -197,9 +198,15 @@ def petApi(request, id=0):
             except Pets.DoesNotExist:
                 return JsonResponse({'error': 'Pet with the given ID is not found.'}, status=404)
         else:
-            pets = Pets.objects.all()
+            # Check for user_id in query parameters
+            user_id = request.GET.get('user_id', None)
+            if user_id:
+                pets = Pets.objects.filter(user_id=user_id)  # Filter pets by user_id
+            else:
+                pets = Pets.objects.all()  # Return all pets if no user_id is provided
             pets_serializer = PetSerializer(pets, many=True)
             return JsonResponse(pets_serializer.data, safe=False)
+
     elif request.method == 'POST':
         pets_data = JSONParser().parse(request)
         pets_serializer = PetSerializer(data=pets_data)
@@ -207,6 +214,7 @@ def petApi(request, id=0):
             pets_serializer.save()
             return JsonResponse("Added successfully", safe=False)
         return JsonResponse("Failed to add", safe=False)
+
     elif request.method == 'PUT':
         pets_data = JSONParser().parse(request)
         try:
@@ -218,6 +226,7 @@ def petApi(request, id=0):
             return JsonResponse("Failed to update", safe=False)
         except Pets.DoesNotExist:
             return JsonResponse({'error': 'Pet with the given ID is not found.'}, status=404)
+
     elif request.method == 'DELETE':
         try:
             pet = Pets.objects.get(pet_id=id)
@@ -225,6 +234,7 @@ def petApi(request, id=0):
             return JsonResponse("Deleted successfully", safe=False)
         except Pets.DoesNotExist:
             return JsonResponse({'error': 'Pet not found.'}, status=404)
+
         
 
 @api_view(['GET', 'PUT'])
